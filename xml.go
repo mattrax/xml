@@ -271,7 +271,7 @@ func NewTokenDecoder(t TokenReader) *Decoder {
 // it will return an error.
 //
 // Token implements XML name spaces as described by
-// https://www.w3.org/TR/REC-xml-names/.  Each of the
+// https://www.w3.org/TR/REC-xml-names/. Each of the
 // Name structures contained in the Token has the Space
 // set to the URL identifying its name space when known.
 // If Token encounters an unrecognized name space prefix,
@@ -285,13 +285,17 @@ func (d *Decoder) Token() (Token, error) {
 	if d.nextToken != nil {
 		t = d.nextToken
 		d.nextToken = nil
-	} else if t, err = d.rawToken(); err != nil {
-		if err == io.EOF && d.stk != nil && d.stk.kind != stkEOF {
-			err = d.syntaxError("unexpected EOF")
+	} else {
+		if t, err = d.rawToken(); t == nil && err != nil {
+			if err == io.EOF && d.stk != nil && d.stk.kind != stkEOF {
+				err = d.syntaxError("unexpected EOF")
+			}
+			return nil, err
 		}
-		return t, err
+		// We still have a token to process, so clear any
+		// errors (e.g. EOF) and proceed.
+		err = nil
 	}
-
 	if !d.Strict {
 		if t1, ok := d.autoClose(t); ok {
 			d.nextToken = t
@@ -310,8 +314,7 @@ func (d *Decoder) Token() (Token, error) {
 				d.pushNs(a.Name.Local, v, ok)
 				d.ns[a.Name.Local] = a.Value
 			}
-			if a.Name.Space == "" && (a.Name.Local == xmlnsPrefix ||
-				strings.Index(a.Name.Local, ":") > 0) {
+			if a.Name.Space == "" && a.Name.Local == xmlnsPrefix {
 				// Default space for untagged names
 				v, ok := d.ns[""]
 				d.pushNs("", v, ok)
@@ -958,7 +961,7 @@ func (d *Decoder) ungetc(b byte) {
 	d.offset--
 }
 
-var entity = map[string]int{
+var entity = map[string]rune{
 	"lt":   '<',
 	"gt":   '>',
 	"amp":  '&',
@@ -1053,7 +1056,7 @@ Input:
 					d.buf.WriteByte(';')
 					n, err := strconv.ParseUint(s, base, 64)
 					if err == nil && n <= unicode.MaxRune {
-						text = string(n)
+						text = string(rune(n))
 						haveText = true
 					}
 				}
@@ -1157,10 +1160,6 @@ func (d *Decoder) nsname() (name Name, ok bool) {
 	if i < 0 {
 		name.Local = s
 	} else {
-		if d.nextByte == 0x0020 || d.nextByte == 0x003E {
-			name.Local = s
-			return name, true
-		}
 		name.Space = s[0:i]
 		name.Local = s[i+1:]
 	}

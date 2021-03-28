@@ -5,7 +5,7 @@
 package xml_test
 
 import (
-	"github.com/mattrax/Mattrax/pkg/xml"
+	"encoding/xml"
 	"fmt"
 	"log"
 	"strings"

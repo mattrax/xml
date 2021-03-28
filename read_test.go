@@ -431,7 +431,7 @@ var tables = []struct {
 			`<f:table>world</f:table>` +
 			`<h:table>hello</h:table>` +
 			`</Tables>`,
-		tab: Tables{}, // TODO
+		tab: Tables{"hello", "world"},
 	},
 	{
 		xml: `<Tables>` +
