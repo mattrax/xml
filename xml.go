@@ -1163,6 +1163,12 @@ func (d *Decoder) nsname() (name Name, ok bool) {
 		name.Space = s[0:i]
 		name.Local = s[i+1:]
 	}
+
+	// This override makes SOAP handling in Go much easier
+	if name.Space != "" {
+		name.Local = name.Space + ":" + name.Local
+	}
+
 	return name, true
 }
 
